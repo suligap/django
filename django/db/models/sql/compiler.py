@@ -452,19 +452,19 @@ class SQLCompiler(object):
                             result.append('LIMIT %d' % val)
                     result.append('OFFSET %d' % self.query.low_mark)
 
-            if self.query.select_for_update and self.connection.features.has_select_for_update:
+            if self.query.select_for_update:
                 if self.connection.get_autocommit():
                     raise TransactionManagementError(
                         "select_for_update cannot be used outside of a transaction."
                     )
-
-                # If we've been asked for a NOWAIT query but the backend does
-                # not support it, raise a DatabaseError otherwise we could get
-                # an unexpected deadlock.
-                nowait = self.query.select_for_update_nowait
-                if nowait and not self.connection.features.has_select_for_update_nowait:
-                    raise DatabaseError('NOWAIT is not supported on this database backend.')
-                result.append(self.connection.ops.for_update_sql(nowait=nowait))
+                if self.connection.features.has_select_for_update:
+                    # If we've been asked for a NOWAIT query but the backend does
+                    # not support it, raise a DatabaseError otherwise we could get
+                    # an unexpected deadlock.
+                    nowait = self.query.select_for_update_nowait
+                    if nowait and not self.connection.features.has_select_for_update_nowait:
+                        raise DatabaseError('NOWAIT is not supported on this database backend.')
+                    result.append(self.connection.ops.for_update_sql(nowait=nowait))
 
             return ' '.join(result), tuple(params)
         finally:
